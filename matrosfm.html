@@ -1,0 +1,612 @@
+<title>МатросFM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: одноекранний застосунок, скляні картки поверх прапорного тла, плаваюче нижнє меню як у Telegram */
+:root{
+  --bg:#eaf2fc; --ink:#0a1f3d; --ink2:#48607f; --blue:#0057b7; --blue-ink:#004a9c; --gold:#ffd500;
+  --glass:rgba(255,255,255,.55); --glass-brd:rgba(255,255,255,.75); --hi:rgba(255,255,255,.95); --lo:rgba(0,60,140,.10);
+  --shadow:rgba(0,50,120,.16); --chip:rgba(0,87,183,.10); --blob1:#5aa2ff; --blob2:#ffe680; --blob3:#8fd4ff; --saltire:#0057b7;
+  --px:#0a4bb5; --px-night:#06255f; --ok:#0f9d58; --warn:#c77700;
+  --f-display:'Unbounded','Onest',system-ui,sans-serif; --f-body:'Onest',system-ui,-apple-system,'Segoe UI',sans-serif; --f-px:'Pixelify Sans','Courier New',monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#050f22; --ink:#e8f1ff; --ink2:#95acd0; --blue:#4d9dff; --blue-ink:#8ec0ff; --gold:#ffd500;
+  --glass:rgba(16,36,76,.50); --glass-brd:rgba(160,200,255,.20); --hi:rgba(190,220,255,.30); --lo:rgba(0,0,0,.35);
+  --shadow:rgba(0,0,0,.45); --chip:rgba(120,180,255,.14); --blob1:#0b4fb3; --blob2:#8a7400; --blob3:#0a7ab8; --saltire:#4d9dff;
+  --px:#0a4bb5; --px-night:#041a45; --ok:#4cd08a; --warn:#ffb648; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#050f22; --ink:#e8f1ff; --ink2:#95acd0; --blue:#4d9dff; --blue-ink:#8ec0ff; --gold:#ffd500;
+  --glass:rgba(16,36,76,.50); --glass-brd:rgba(160,200,255,.20); --hi:rgba(190,220,255,.30); --lo:rgba(0,0,0,.35);
+  --shadow:rgba(0,0,0,.45); --chip:rgba(120,180,255,.14); --blob1:#0b4fb3; --blob2:#8a7400; --blob3:#0a7ab8; --saltire:#4d9dff;
+  --px:#0a4bb5; --px-night:#041a45; --ok:#4cd08a; --warn:#ffb648; color-scheme:dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--f-body);overflow:hidden;transition:background .3s}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:12px}
+h1,h2,h3,p{margin:0}
+h2{font:700 13px/1.2 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink2)}
+
+/* тло: прапор ВМС (білий фон, синій хрест) + рідкі плями */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg svg{position:absolute;inset:0;width:100%;height:100%;opacity:.10}
+.bg i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.75;animation:drift 22s ease-in-out infinite alternate}
+.bg i:nth-child(2){width:46vmax;height:46vmax;left:-12vmax;top:-10vmax;background:var(--blob1)}
+.bg i:nth-child(3){width:30vmax;height:30vmax;right:-8vmax;top:30%;background:var(--blob2);animation-duration:28s;opacity:.5}
+.bg i:nth-child(4){width:40vmax;height:40vmax;left:20%;bottom:-18vmax;background:var(--blob3);animation-duration:25s}
+@keyframes drift{to{transform:translate(6vmax,-4vmax) scale(1.12)}}
+
+.app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+.glass{position:relative;background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid var(--glass-brd);border-radius:26px;box-shadow:inset 0 1px 0 var(--hi),inset 0 -1px 0 var(--lo),0 12px 32px var(--shadow)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.28),rgba(255,255,255,0) 38%)}
+
+header{display:flex;align-items:center;gap:12px;padding:12px 16px 8px;max-width:760px;width:100%;margin-inline:auto}
+.logo{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.logo svg{flex:none;width:42px;height:28px;border-radius:4px;box-shadow:0 2px 8px var(--shadow),0 0 0 1px var(--glass-brd)}
+.logo b{font:700 19px/1 var(--f-display);letter-spacing:-.01em}
+.logo b span{color:var(--blue)}
+.logo small{display:block;font-size:11px;color:var(--ink2);margin-top:3px}
+.icon-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none}
+.icon-btn svg{width:22px;height:22px}
+.offline{margin:0 16px;padding:8px 14px;border-radius:14px;background:var(--warn);color:#fff;font-weight:600;text-align:center;max-width:728px;align-self:center;width:calc(100% - 32px)}
+
+main{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-behavior:smooth;padding-bottom:170px}
+.view{max-width:760px;margin-inline:auto;padding:8px 16px 0;display:grid;gap:14px;animation:in .35s ease both}
+@keyframes in{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 4px 0}
+.sec-h .chip-note{font-size:11px}
+
+/* --- Ефір --- */
+.hero{padding:18px 18px 20px;display:grid;gap:14px;overflow:hidden}
+.live-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.badge{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:99px;background:var(--chip);font:600 12px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--ink2)}
+.playing .badge i{background:#ff3b30;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+canvas#viz{width:100%;height:130px;display:block}
+.track h1{font:700 clamp(20px,5vw,26px)/1.2 var(--f-display);text-wrap:balance}
+.track p{color:var(--ink2);margin-top:4px}
+.controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.controls .side{display:flex;gap:8px}
+.controls .side:last-child{justify-content:flex-end}
+.play{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(160deg,#3d8bff,var(--blue) 55%,#003f85);box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -6px 14px rgba(0,30,90,.35),0 12px 26px rgba(0,87,183,.45);transition:transform .15s}
+.play:active{transform:scale(.94)}
+.play svg{width:34px;height:34px}
+.play .i-pause,.playing .play .i-play{display:none}
+.playing .play .i-pause{display:block}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:99px;background:var(--chip);font-weight:600;font-size:13px}
+.pill svg{width:18px;height:18px}
+.pill[aria-pressed="true"]{color:#e0245e}
+.vol{display:flex;align-items:center;gap:10px}
+.vol svg{width:20px;height:20px;flex:none;color:var(--ink2)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;background:none;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--blue) var(--p,80%),var(--chip) var(--p,80%))}
+input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:var(--chip)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:var(--blue)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;margin-top:-9px;background:#fff;border:1px solid var(--glass-brd);box-shadow:0 2px 8px var(--shadow)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid var(--glass-brd);box-shadow:0 2px 8px var(--shadow)}
+.hint{font-size:13px;color:var(--ink2);display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.link{color:var(--blue-ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.now{padding:16px 18px;display:flex;gap:14px;align-items:center}
+.now .dot{width:12px;height:52px;border-radius:99px;background:linear-gradient(var(--blue) 50%,var(--gold) 50%);flex:none}
+.now div{min-width:0}
+.now b{display:block;font:700 16px/1.3 var(--f-display)}
+.now span{color:var(--ink2);font-size:13px}
+
+/* --- Новини --- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:40px;padding:0 16px;border-radius:99px;background:var(--glass);border:1px solid var(--glass-brd);font-weight:600;font-size:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.chip[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:transparent}
+.news-list{display:grid;gap:12px}
+.news{padding:14px 16px;display:grid;gap:6px;text-decoration:none;color:inherit}
+.news h3{font:600 16px/1.35 var(--f-body);text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:var(--ink2)}
+.tag{padding:2px 9px;border-radius:99px;background:var(--chip);font-weight:600;color:var(--blue-ink)}
+.chip-note{padding:2px 9px;border-radius:99px;border:1px dashed var(--ink2);color:var(--ink2);font-size:11px;font-weight:600}
+.sk{height:74px;border-radius:22px;background:linear-gradient(100deg,var(--chip) 30%,var(--glass) 50%,var(--chip) 70%);background-size:300% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-300% 0}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:99px;font-weight:700;background:var(--blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 18px rgba(0,87,183,.35)}
+.btn.ghost{background:var(--chip);color:var(--blue-ink);box-shadow:none}
+.btn svg{width:20px;height:20px}
+
+/* --- Погода: синій піксель --- */
+.px{position:relative;font-family:var(--f-px);color:#fff;background:var(--px);padding:22px 20px;
+  clip-path:polygon(0 8px,8px 8px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 8px),0 calc(100% - 8px));
+  image-rendering:pixelated}
+.px.night{background:var(--px-night)}
+.px::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(45deg,rgba(255,255,255,.07) 25%,transparent 25% 75%,rgba(255,255,255,.07) 75%),linear-gradient(45deg,rgba(255,255,255,.07) 25%,transparent 25% 75%,rgba(255,255,255,.07) 75%);background-size:8px 8px;background-position:0 0,4px 4px}
+.px > *{position:relative}
+.w-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.w-top select{font:600 16px var(--f-px);color:#fff;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.7);border-radius:0;padding:8px 12px;min-height:44px}
+.w-top select option{color:#0a1f3d}
+.w-now{display:flex;align-items:center;gap:18px;margin-top:14px;flex-wrap:wrap}
+.w-now canvas{width:128px;height:128px;image-rendering:pixelated;flex:none}
+.temp{font:700 clamp(64px,18vw,92px)/1 var(--f-px);letter-spacing:-.02em}
+.w-desc{font-size:20px}
+.w-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:16px}
+.w-stats div{border:2px solid rgba(255,255,255,.55);padding:8px 10px;font-size:14px;background:rgba(0,20,80,.25)}
+.w-stats b{display:block;font-size:20px}
+.px-h{font-size:14px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
+.hours{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.hour{flex:none;width:72px;text-align:center;border:2px solid rgba(255,255,255,.45);padding:8px 4px;background:rgba(0,20,80,.25)}
+.hour canvas,.day canvas{width:40px;height:40px;image-rendering:pixelated;display:block;margin:4px auto}
+.hour b{font-size:18px}
+.days{display:grid;gap:8px}
+.day{display:grid;grid-template-columns:64px 44px 1fr auto;align-items:center;gap:10px;border:2px solid rgba(255,255,255,.45);padding:6px 12px;background:rgba(0,20,80,.25);font-size:16px}
+.day span:last-child{white-space:nowrap}
+.day i{font-style:normal;opacity:.65}
+.src{font-size:13px;opacity:.85;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.src em{font-style:normal;border:2px dashed rgba(255,255,255,.7);padding:1px 8px}
+
+/* --- Програма --- */
+.sched{display:grid;gap:10px}
+.slot{display:grid;grid-template-columns:86px 1fr auto;gap:12px;align-items:center;padding:14px 16px}
+.slot time{font:600 14px var(--f-display);color:var(--ink2);font-variant-numeric:tabular-nums}
+.slot b{display:block;font-size:16px}
+.slot span{font-size:13px;color:var(--ink2)}
+.slot.cur{outline:2px solid var(--blue);outline-offset:-2px}
+.slot.cur time{color:var(--blue-ink)}
+.on-air{padding:3px 10px;border-radius:99px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+
+/* --- Ще --- */
+.group{padding:6px 16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--lo);flex-wrap:wrap}
+.row:last-child{border-bottom:0}
+.row label,.row .lbl{font-weight:600}
+.row small{display:block;color:var(--ink2);font-weight:400;font-size:12px;margin-top:2px;max-width:46ch}
+.seg{display:inline-flex;background:var(--chip);border-radius:99px;padding:3px}
+.seg button{min-height:38px;padding:0 14px;border-radius:99px;font-weight:600;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--glass);box-shadow:inset 0 1px 0 var(--hi),0 2px 8px var(--shadow);color:var(--blue-ink)}
+.switch{width:52px;height:32px;border-radius:99px;background:var(--chip);position:relative;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px var(--shadow);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--blue)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+input[type=text],input[type=url],textarea{width:100%;min-height:46px;padding:10px 14px;border-radius:16px;border:1px solid var(--glass-brd);background:var(--glass);color:var(--ink);font:inherit}
+textarea{min-height:84px;resize:vertical}
+.form{display:grid;gap:10px;padding:16px}
+.form label{font-weight:600;font-size:13px}
+.about{padding:18px;display:flex;gap:16px;align-items:center}
+.about svg{width:96px;height:64px;flex:none;border-radius:6px;box-shadow:0 4px 14px var(--shadow)}
+.about p{font-size:13px;color:var(--ink2)}
+
+/* --- міні-плеєр і нижнє меню --- */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;gap:8px;justify-items:center;padding:0 12px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.dock > *{pointer-events:auto}
+.mini{width:min(100%,520px);display:flex;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-radius:99px}
+.mini div{flex:1;min-width:0}
+.mini b,.mini span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini b{font-size:14px}.mini span{font-size:12px;color:var(--ink2)}
+.mini .mp{width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;flex:none}
+.mini .mp svg{width:20px;height:20px}
+.mini .i-pause,.playing .mini .i-play{display:none}
+.playing .mini .i-pause{display:block}
+nav.tabs{width:min(100%,520px);display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px;border-radius:30px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;border-radius:24px;font-size:11px;font-weight:600;color:var(--ink2);transition:background .2s,color .2s}
+.tab svg{width:26px;height:26px;transition:transform .2s}
+.tab.on{color:var(--blue-ink);background:var(--chip);box-shadow:inset 0 1px 0 var(--hi)}
+.tab.on svg{transform:translateY(-1px) scale(1.06)}
+
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;z-index:9;padding:12px 18px;border-radius:99px;max-width:calc(100% - 32px);text-align:center;font-weight:600;transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (min-width:900px){
+  .view#v-live{grid-template-columns:1.25fr 1fr;align-items:start}
+  .view#v-live .hero{grid-row:span 2}
+  .view{max-width:900px}header{max-width:900px}
+}
+@media (max-width:380px){.slot{grid-template-columns:70px 1fr}.slot .on-air{grid-column:2;justify-self:start}.day{grid-template-columns:52px 40px 1fr auto;gap:6px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="flag" viewBox="0 0 500 333">
+<rect width="500" height="333" fill="#fff"/>
+<rect x="216" width="72" height="333" fill="#0057b7"/><rect y="130" width="500" height="72" fill="#0057b7"/>
+<rect x="224" width="56" height="333" fill="#fff"/><rect y="138" width="500" height="56" fill="#fff"/>
+<rect x="236" width="32" height="333" fill="#0057b7"/><rect y="150" width="500" height="32" fill="#0057b7"/>
+<rect width="224" height="69" fill="#0057b7"/><rect y="69" width="224" height="69" fill="#ffd500"/>
+</symbol></defs></svg>
+<div class="bg" aria-hidden="true">
+  <svg viewBox="0 0 500 333" preserveAspectRatio="xMidYMid slice"><g fill="var(--saltire)"><rect x="216" width="8" height="333"/><rect x="280" width="8" height="333"/><rect x="236" width="32" height="333"/><rect y="130" width="500" height="8"/><rect y="194" width="500" height="8"/><rect y="150" width="500" height="32"/></g></svg>
+  <i></i><i></i><i></i>
+</div>
+
+<div class="app" id="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 500 333" role="img" aria-label="Прапор Військово-Морських Сил ЗС України"><use href="#flag"/></svg>
+      <div><b>Матрос<span>FM</span></b><small>Радіо на морській хвилі</small></div>
+    </div>
+    <button class="icon-btn glass" id="themeBtn" aria-label="Перемкнути тему"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </header>
+  <div class="offline" id="offline" hidden>Немає інтернету. Ефір і новини можуть не працювати.</div>
+
+  <main id="main">
+    <!-- ЕФІР -->
+    <section class="view" id="v-live" aria-label="Ефір">
+      <div class="glass hero" id="hero">
+        <div class="live-row"><span class="badge"><i></i><span id="stateTxt">Пауза</span></span><span class="chip-note" id="modeNote">Демо-ефір</span></div>
+        <canvas id="viz" aria-hidden="true"></canvas>
+        <div class="track"><h1 id="trkTitle">Хвилі Чорного моря</h1><p id="trkArtist">Демо-мелодія МатросFM</p></div>
+        <div class="controls">
+          <div class="side"><button class="pill" id="favBtn" aria-pressed="false" aria-label="Вподобати"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.5s-8-4.7-8-10.6A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8 2.9c0 5.9-8 10.6-8 10.6z"/></svg></button></div>
+          <button class="play" id="playBtn" aria-label="Слухати ефір">
+            <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>
+          </button>
+          <div class="side"><button class="pill" id="sleepBtn" aria-label="Таймер сну"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2.5h6"/></svg><span id="sleepTxt">Сон</span></button></div>
+        </div>
+        <div class="vol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h4l5 4v-13l-5 4z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></svg><input type="range" id="vol" min="0" max="100" value="80" aria-label="Гучність"></div>
+        <p class="hint" id="liveHint">Зараз грає демо-мелодія, згенерована в браузері. Щоб підключити свій потік, вставте його адресу в розділі <a class="link" href="#more">Ще</a>.</p>
+      </div>
+      <div class="glass now" id="nowCard"><div class="dot"></div><div><span>Зараз у програмі</span><b id="nowTitle">…</b><span id="nowDesc"></span></div></div>
+    </section>
+
+    <!-- НОВИНИ -->
+    <section class="view" id="v-news" aria-label="Новини" hidden>
+      <div class="sec-h"><h2>Новини</h2><span class="chip-note" id="newsNote" hidden>Приклад</span></div>
+      <div class="chips" id="chips" role="group" aria-label="Фільтр новин"></div>
+      <div class="news-list" id="newsList"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="ttsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h4l5 4v-13l-5 4z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></svg><span id="ttsTxt">Прослухати випуск</span></button></div>
+    </section>
+
+    <!-- ПОГОДА -->
+    <section class="view" id="v-weather" aria-label="Погода" hidden>
+      <div class="px" id="wCard">
+        <div class="w-top"><div><div class="px-h" style="margin:0">Погода</div></div>
+          <select id="city" aria-label="Місто"></select></div>
+        <div class="w-now"><canvas id="wBig" width="16" height="16" aria-hidden="true"></canvas>
+          <div><div class="temp" id="wTemp">--°</div><div class="w-desc" id="wDesc">Завантаження…</div></div></div>
+        <div class="w-stats" id="wStats"></div>
+        <div class="src" id="wSrc"></div>
+      </div>
+      <div class="px"><div class="px-h">Найближчі години</div><div class="hours" id="wHours"></div></div>
+      <div class="px"><div class="px-h">5 днів</div><div class="days" id="wDays"></div></div>
+    </section>
+
+    <!-- ПРОГРАМА -->
+    <section class="view" id="v-schedule" aria-label="Програма" hidden>
+      <div class="sec-h"><h2>Програма ефіру</h2><span class="chip-note">Приклад</span></div>
+      <div class="sched" id="sched"></div>
+      <p class="hint">Час київський. Випуск новин на початку кожної години. Розклад можна змінити в коді сторінки.</p>
+    </section>
+
+    <!-- ЩЕ -->
+    <section class="view" id="v-more" aria-label="Налаштування" hidden>
+      <div class="sec-h"><h2>Налаштування</h2></div>
+      <div class="glass group">
+        <div class="row"><div class="lbl">Тема</div>
+          <div class="seg" id="themeSeg" role="group" aria-label="Тема"><button data-t="auto">Авто</button><button data-t="light">Світла</button><button data-t="dark">Темна</button></div></div>
+        <div class="row"><div class="lbl">Таймер сну<small>Ефір вимкнеться сам</small></div><button class="pill" id="sleepBtn2"><span id="sleepTxt2">Вимкнено</span></button></div>
+        <div class="row"><div class="lbl">Економія трафіку та заряду<small>Вимикає анімацію візуалізатора</small></div><button class="switch" id="saveSw" role="switch" aria-checked="false" aria-label="Економія трафіку"></button></div>
+      </div>
+      <div class="glass form">
+        <label for="streamUrl">Адреса потоку (Icecast / AzuraCast)</label>
+        <input type="url" id="streamUrl" placeholder="https://radio.example.com/listen/matrosfm/radio.mp3" inputmode="url" autocomplete="off">
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="saveStream">Зберегти</button><button class="btn ghost" id="clearStream">Демо-ефір</button></div>
+        <p class="hint">Потік працює, коли сторінка лежить на вашому хостингу. У цьому перегляді зовнішні адреси заблоковано, тому тут грає демо-мелодія.</p>
+      </div>
+      <form class="glass form" id="reqForm">
+        <label for="reqName">Замовити пісню</label>
+        <input type="text" id="reqName" placeholder="Ваше ім'я або позивний" autocomplete="nickname" maxlength="40">
+        <input type="text" id="reqSong" placeholder="Виконавець і назва" maxlength="90" required>
+        <textarea id="reqMsg" placeholder="Привітання для екіпажу (необов'язково)" maxlength="240"></textarea>
+        <button class="btn" type="submit">Надіслати заявку</button>
+        <p class="hint" id="reqInfo">Заявки зберігаються в цьому браузері. Щоб вони доходили до ефіру, підключіть форму до вашого сервера.</p>
+      </form>
+      <div class="glass about">
+        <svg viewBox="0 0 500 333" aria-hidden="true"><use href="#flag"/></svg>
+        <div><b style="font-family:var(--f-display)">МатросFM</b><p>Радіо для тих, хто на вахті. Прапор Військово-Морських Сил ЗС України: синій хрест на білому полотнищі та державний прапор у кантоні.</p></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="shareBtn">Скопіювати посилання</button></div>
+    </section>
+  </main>
+
+  <div class="dock">
+    <div class="glass mini" id="mini" hidden>
+      <div><b id="miniT">МатросFM</b><span id="miniS">Демо-ефір</span></div>
+      <button class="mp" id="miniBtn" aria-label="Пауза або слухати">
+        <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>
+      </button>
+    </div>
+    <nav class="glass tabs" aria-label="Розділи">
+      <button class="tab on" data-v="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>Ефір</button>
+      <button class="tab" data-v="news"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a2 2 0 0 1 2 2v13a1 1 0 0 0 1 1H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"/><path d="M18 9h2v10a1 1 0 0 1-1 1M8 8h6M8 12h6M8 16h4"/></svg>Новини</button>
+      <button class="tab" data-v="weather"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-8A5.5 5.5 0 0 1 17 8.5a4.8 4.8 0 0 1 0 9.5z"/><path d="M8.5 3.5 9.7 5M3.5 8.5 5 9.7"/></svg>Погода</button>
+      <button class="tab" data-v="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3"/></svg>Програма</button>
+      <button class="tab" data-v="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Ще</button>
+    </nav>
+  </div>
+</div>
+<div class="toast glass" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+/* ====== НАЛАШТУВАННЯ ДЛЯ ВЛАСНОГО САЙТУ ====== */
+const CONFIG={
+  STREAM_URL:'',        // адреса потоку Icecast/AzuraCast, напр. https://radio.example.com/listen/matrosfm/radio.mp3
+  NOWPLAYING_URL:'',    // API AzuraCast, напр. https://radio.example.com/api/nowplaying/matrosfm
+  NEWS_RSS:[],          // RSS-стрічки, напр. ['https://example.com/rss.xml']
+  DEFAULT_CITY:'Одеса'
+};
+const CITIES=[['Одеса',46.4825,30.7233],['Миколаїв',46.975,31.9946],['Ізмаїл',45.3517,28.8362],['Київ',50.4501,30.5234],['Львів',49.8397,24.0297],['Харків',49.9935,36.2304],['Дніпро',48.4647,35.0462]];
+const SCHEDULE=[
+  [0,6,'Нічна вахта','Спокійна музика для нічних змін'],
+  [6,9,'Ранкова вахта','Бадьорий старт дня і новини'],
+  [9,12,'Хвилі дня','Хіти, погода, новини щогодини'],
+  [12,14,'Обідній кубрик','Легкий мікс для перерви'],
+  [14,18,'Курс на вечір','Драйвові треки та замовлення слухачів'],
+  [18,21,'Вечірній рейд','Українська музика'],
+  [21,24,'Тиха гавань','Лаунж на добраніч']
+];
+const SAMPLE_NEWS=[
+  ['Море','Тут буде заголовок з вашої RSS-стрічки про море та порти','Джерело 1','15 хв тому'],
+  ['Україна','Приклад заголовка головної новини дня','Джерело 2','40 хв тому'],
+  ['Світ','Приклад міжнародної новини для випуску','Джерело 3','1 год тому'],
+  ['Море','Приклад новини про погоду на морі та штормове попередження','Джерело 1','2 год тому'],
+  ['Україна','Приклад місцевої новини з вашого регіону','Джерело 2','3 год тому']
+];
+
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const store={get(k,d){try{const v=localStorage.getItem('mfm.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('mfm.'+k,JSON.stringify(v))}catch(e){}}};
+const mk=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ====== ТЕМА ====== */
+const dq=matchMedia('(prefers-color-scheme: dark)');
+let themeMode=store.get('theme','auto');
+function isDark(){return themeMode==='dark'||(themeMode==='auto'&&dq.matches)}
+function applyTheme(m){themeMode=m;const r=document.documentElement;if(m==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',m);store.set('theme',m);$$('#themeSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===m)));cacheColors()}
+$('#themeBtn').onclick=()=>applyTheme(isDark()?'light':'dark');
+$$('#themeSeg button').forEach(b=>b.onclick=()=>applyTheme(b.dataset.t));
+dq.addEventListener&&dq.addEventListener('change',cacheColors);
+
+/* ====== НАВІГАЦІЯ ====== */
+const VIEWS=['live','news','weather','schedule','more'];let cur='live',wLoaded=false,nLoaded=false;
+function go(id){
+  if(!VIEWS.includes(id))id='live';cur=id;
+  VIEWS.forEach(v=>{$('#v-'+v).hidden=v!==id});
+  $$('.tab').forEach(t=>{const on=t.dataset.v===id;t.classList.toggle('on',on);on?t.setAttribute('aria-current','page'):t.removeAttribute('aria-current')});
+  $('#main').scrollTop=0;updateMini();
+  if(id==='weather'&&!wLoaded){wLoaded=true;loadWeather()}
+  if(id==='news'&&!nLoaded){nLoaded=true;loadNews()}
+  if(id==='live')kick();
+  if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);
+}
+$$('.tab').forEach(t=>t.onclick=()=>go(t.dataset.v));
+$$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();go(a.getAttribute('href').slice(1))}));
+addEventListener('hashchange',()=>go(location.hash.slice(1)));
+function updateMini(){$('#mini').hidden=!(started&&cur!=='live')}
+
+/* ====== ПЛЕЄР ====== */
+let ac,master,analyser,synthIn,synthTimer,nextT=0,stepI=0,el=null,playing=false,started=false,vol=store.get('vol',80)/100;
+const streamUrl=()=>store.get('stream',CONFIG.STREAM_URL)||'';
+const prog=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]];
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function ensureCtx(){
+  if(ac)return;const AC=window.AudioContext||window.webkitAudioContext;ac=new AC();
+  master=ac.createGain();analyser=ac.createAnalyser();analyser.fftSize=128;analyser.smoothingTimeConstant=.78;
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
+  const dl=ac.createDelay();dl.delayTime.value=.36;const fb=ac.createGain();fb.gain.value=.32;dl.connect(fb);fb.connect(dl);
+  const wet=ac.createGain();wet.gain.value=.35;lp.connect(master);lp.connect(dl);dl.connect(wet);wet.connect(master);
+  master.connect(analyser);analyser.connect(ac.destination);synthIn=lp;
+}
+function tone(t,m,dur,type,g){const o=ac.createOscillator(),n=ac.createGain();o.type=type;o.frequency.value=mtof(m);n.gain.setValueAtTime(0,t);n.gain.linearRampToValueAtTime(g,t+.02);n.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(n);n.connect(synthIn);o.start(t);o.stop(t+dur+.05)}
+function pump(){const spb=60/84/2;while(nextT<ac.currentTime+.3){const bar=Math.floor(stepI/8)%4,s=stepI%8,ch=prog[bar];
+  if(s===0){tone(nextT,ch[0]-24,spb*7,'sine',.5);ch.forEach(n=>tone(nextT,n,spb*8,'triangle',.06))}
+  if(s===4)tone(nextT,ch[0]-12,spb*2,'sine',.25);
+  tone(nextT,ch[[0,1,2,1,2,1,0,2][s]]+12,spb*1.6,'triangle',.11);stepI++;nextT+=spb}}
+function setVol(v){vol=v;store.set('vol',Math.round(v*100));if(master)master.gain.value=v*.6;if(el)el.volume=v;const r=$('#vol');r.value=Math.round(v*100);r.style.setProperty('--p',Math.round(v*100)+'%')}
+function ui(){
+  document.getElementById('app').classList.toggle('playing',playing);
+  $('#stateTxt').textContent=playing?'В ефірі':'Пауза';
+  $('#playBtn').setAttribute('aria-label',playing?'Пауза':'Слухати ефір');
+  $('#miniBtn').setAttribute('aria-label',playing?'Пауза':'Слухати');
+  $('#miniS').textContent=playing?'В ефірі':'Пауза';
+  const t=$('#trkTitle').textContent;$('#miniT').textContent=t;
+  updateMini();kick();
+  if('mediaSession' in navigator){try{navigator.mediaSession.metadata=new MediaMetadata({title:t,artist:$('#trkArtist').textContent,album:'МатросFM'});navigator.mediaSession.playbackState=playing?'playing':'paused'}catch(e){}}
+}
+function play(){
+  const url=streamUrl();started=true;
+  if(url){
+    if(!el){el=new Audio();el.preload='none';el.addEventListener('error',()=>{if(playing){playing=false;ui();toast('Не вдалося підключитися до потоку')}});el.addEventListener('waiting',()=>{$('#stateTxt').textContent='Буферизація…'});el.addEventListener('playing',()=>{if(playing)$('#stateTxt').textContent='В ефірі'})}
+    if(el.src!==url)el.src=url;el.volume=vol;playing=true;ui();
+    el.play().catch(()=>{playing=false;ui();toast('Браузер не дозволив відтворення. Спробуйте ще раз.')});
+  }else{
+    try{ensureCtx();master.gain.value=vol*.6;ac.resume();nextT=ac.currentTime+.05;clearInterval(synthTimer);synthTimer=setInterval(pump,100);playing=true;ui()}
+    catch(e){toast('Звук недоступний у цьому браузері')}
+  }
+}
+function pause(){
+  playing=false;if(el)el.pause();clearInterval(synthTimer);if(ac)ac.suspend();ui();
+}
+const toggle=()=>playing?pause():play();
+$('#playBtn').onclick=toggle;$('#miniBtn').onclick=toggle;
+$('#vol').addEventListener('input',e=>setVol(e.target.value/100));
+addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){e.preventDefault();toggle()}});
+if('mediaSession' in navigator){try{navigator.mediaSession.setActionHandler('play',play);navigator.mediaSession.setActionHandler('pause',pause)}catch(e){}}
+
+/* режим: демо чи власний потік */
+function refreshMode(){
+  const url=streamUrl();$('#modeNote').textContent=url?'Прямий ефір':'Демо-ефір';
+  $('#liveHint').hidden=!!url;$('#streamUrl').value=store.get('stream','')||'';
+  if(!url){$('#trkTitle').textContent='Хвилі Чорного моря';$('#trkArtist').textContent='Демо-мелодія МатросFM'}
+  else if(!CONFIG.NOWPLAYING_URL){$('#trkTitle').textContent='МатросFM';$('#trkArtist').textContent='Прямий ефір'}
+  ui();
+}
+async function pollNow(){
+  if(!CONFIG.NOWPLAYING_URL||!streamUrl())return;
+  try{const r=await fetch(CONFIG.NOWPLAYING_URL,{cache:'no-store'});const j=await r.json();const s=(j.now_playing||{}).song||{};
+    if(s.title){$('#trkTitle').textContent=s.title;$('#trkArtist').textContent=s.artist||'МатросFM';ui();syncFav()}}catch(e){}
+}
+setInterval(pollNow,15000);
+$('#saveStream').onclick=()=>{const v=$('#streamUrl').value.trim();if(v&&!/^https?:\/\//i.test(v)){toast('Адреса має починатися з https://');return}
+  const was=playing;if(was)pause();if(el){el.removeAttribute('src');el.load()}store.set('stream',v);refreshMode();pollNow();toast(v?'Потік збережено':'Повернено демо-ефір')};
+$('#clearStream').onclick=()=>{$('#streamUrl').value='';$('#saveStream').click()};
+
+/* вподобання */
+const favs=new Set(store.get('favs',[]));
+function syncFav(){const on=favs.has($('#trkTitle').textContent);const b=$('#favBtn');b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Прибрати з вподобаних':'Вподобати')}
+$('#favBtn').onclick=()=>{const t=$('#trkTitle').textContent;if(favs.has(t)){favs.delete(t);toast('Прибрано з вподобаних')}else{favs.add(t);toast('Додано до вподобаних')}store.set('favs',[...favs]);syncFav()};
+
+/* таймер сну */
+const SLEEP=[0,15,30,60];let sleepI=0,sleepT=null;
+function sleepLabel(){const m=SLEEP[sleepI];return m?m+' хв':'Вимк.'}
+function cycleSleep(){sleepI=(sleepI+1)%SLEEP.length;clearTimeout(sleepT);const m=SLEEP[sleepI];
+  if(m){sleepT=setTimeout(()=>{pause();sleepI=0;sleepUi();toast('Добраніч! Ефір вимкнено')},m*60000);toast('Ефір вимкнеться через '+m+' хв')}else toast('Таймер сну вимкнено');sleepUi()}
+function sleepUi(){$('#sleepTxt').textContent=SLEEP[sleepI]?sleepLabel():'Сон';$('#sleepTxt2').textContent=sleepLabel()}
+$('#sleepBtn').onclick=cycleSleep;$('#sleepBtn2').onclick=cycleSleep;
+
+/* економія */
+let saver=store.get('saver',false);
+function saverUi(){$('#saveSw').setAttribute('aria-checked',String(saver))}
+$('#saveSw').onclick=()=>{saver=!saver;store.set('saver',saver);saverUi();kick()};
+
+/* ====== ВІЗУАЛІЗАТОР: піксельні стовпчики ====== */
+const cv=$('#viz'),cx=cv.getContext('2d');let colBlue='#0057b7',colGold='#ffd500',raf=0,W=0,H=0,D=1;
+function cacheColors(){const s=getComputedStyle(document.documentElement);colBlue=s.getPropertyValue('--blue').trim()||colBlue;colGold=s.getPropertyValue('--gold').trim()||colGold;kick()}
+function resize(){const r=cv.getBoundingClientRect();D=Math.min(devicePixelRatio||1,2);W=cv.width=Math.max(1,Math.round(r.width*D));H=cv.height=Math.max(1,Math.round(r.height*D))}
+addEventListener('resize',()=>{resize();kick()});
+const N=24,fq=new Uint8Array(64);
+function frame(t){
+  raf=0;if(cur!=='live')return;
+  cx.clearRect(0,0,W,H);
+  const useA=analyser&&playing&&!streamUrl();if(useA)analyser.getByteFrequencyData(fq);
+  const gap=4*D,bw=(W-gap*(N-1))/N,blk=Math.max(6*D,Math.min(bw*.9,14*D)),rows=Math.floor(H/(blk+2*D));
+  for(let i=0;i<N;i++){
+    let v;if(useA)v=Math.min(1,(fq[Math.floor(i*1.3)]/255)*1.25);
+    else v=playing?(.25+.75*(Math.sin(t/260+i*.7)*.5+.5)*(Math.sin(t/830+i*1.3)*.5+.5)):.06+.03*Math.sin(i*.9);
+    const n=Math.max(1,Math.round(v*rows)),x=i*(bw+gap)+(bw-blk)/2;
+    for(let k=0;k<n;k++){cx.fillStyle=k>=n-1&&n>3?colGold:colBlue;cx.globalAlpha=.55+.45*(k/rows);cx.fillRect(x,H-(k+1)*(blk+2*D),blk,blk)}
+  }
+  cx.globalAlpha=1;
+  if(playing&&!saver&&!reduced&&!document.hidden)raf=requestAnimationFrame(frame);
+}
+function kick(){if(!raf&&cur==='live')raf=requestAnimationFrame(frame)}
+document.addEventListener('visibilitychange',kick);
+
+/* ====== ПРОГРАМА ====== */
+function kyivHour(){return (+new Intl.DateTimeFormat('uk-UA',{hour:'numeric',hour12:false,timeZone:'Europe/Kyiv'}).format(new Date()))%24}
+const pad=n=>String(n).padStart(2,'0');
+function renderSchedule(){
+  const h=kyivHour(),box=$('#sched');box.textContent='';let curIdx=0;
+  SCHEDULE.forEach((s,i)=>{const on=h>=s[0]&&h<s[1];if(on)curIdx=i;
+    const d=mk('div','glass slot'+(on?' cur':''));d.appendChild(mk('time','',pad(s[0])+':00 – '+pad(s[1]%24)+':00'));
+    const m=mk('div');m.appendChild(mk('b','',s[2]));m.appendChild(mk('span','',s[3]));d.appendChild(m);if(on)d.appendChild(mk('span','on-air','Зараз'));box.appendChild(d)});
+  const c=SCHEDULE[curIdx];$('#nowTitle').textContent=c[2];$('#nowDesc').textContent=c[3]+' · до '+pad(c[1]%24)+':00';
+}
+
+/* ====== ПОГОДА: піксельні спрайти ====== */
+const PAL={y:'#ffd500',Y:'#e0a800',w:'#ffffff',c:'#dcecff',C:'#9cc4f5',n:'#2a4a8f',b:'#7fc4ff',k:'#ffe873',s:'#bfe3ff'};
+function sprite(kind){
+  const g=Array.from({length:16},()=>Array(16).fill(null)),P=(x,y,c)=>{if(x>=0&&y>=0&&x<16&&y<16)g[y][x]=c};
+  const circ=(cx0,cy0,r,c)=>{for(let y=0;y<16;y++)for(let x=0;x<16;x++)if((x-cx0)**2+(y-cy0)**2<=r*r+r*.5)P(x,y,c)};
+  const rect=(x,y,w,h,c)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)P(x+i,y+j,c)};
+  const sun=(cx0,cy0,r)=>{circ(cx0,cy0,r,PAL.Y);circ(cx0-.5,cy0-.5,r-1,PAL.y);
+    if(r>=4)[[0,-7],[0,7],[-7,0],[7,0],[-5,-5],[5,5],[-5,5],[5,-5]].forEach(([dx,dy])=>{P(cx0+dx,cy0+dy,PAL.k);if(dx&&!dy)P(cx0+dx+(dx>0?-1:1),cy0,PAL.k);if(dy&&!dx)P(cx0,cy0+dy+(dy>0?-1:1),PAL.k)})};
+  const cloud=(dx,dy,dark)=>{const a=dark?PAL.C:PAL.w,b=dark?'#6f98d6':PAL.C;
+    circ(5+dx,9+dy,3,a);circ(9+dx,7+dy,4,a);circ(12+dx,10+dy,3,a);rect(4+dx,10+dy,10,3,a);rect(4+dx,12+dy,10,1,b)};
+  if(kind==='sun')sun(8,8,4);
+  else if(kind==='part'){sun(5,5,3);cloud(0,1)}
+  else if(kind==='cloud')cloud(0,0);
+  else if(kind==='fog'){cloud(0,-2);rect(2,12,12,1,PAL.s);rect(4,14,10,1,PAL.s)}
+  else if(kind==='rain'){cloud(0,-2,true);[[4,12],[7,13],[10,12],[13,13],[5,15],[9,15]].forEach(([x,y])=>{P(x,y,PAL.b);P(x,y+1>15?15:y+1,PAL.b)})}
+  else if(kind==='snow'){cloud(0,-2);[[4,13],[8,14],[12,13],[6,15],[10,15]].forEach(([x,y])=>P(x,y,PAL.w))}
+  else if(kind==='storm'){cloud(0,-3,true);[[9,11],[8,12],[7,13],[8,13],[9,13],[8,14],[7,15]].forEach(([x,y])=>P(x,y,PAL.y))}
+  return g;
+}
+function drawSprite(cv2,kind,night){
+  const g=sprite(kind),c=cv2.getContext('2d');cv2.width=16;cv2.height=16;c.clearRect(0,0,16,16);
+  for(let y=0;y<16;y++)for(let x=0;x<16;x++)if(g[y][x]){c.fillStyle=(night&&kind==='sun'&&(g[y][x]===PAL.y||g[y][x]===PAL.k))?'#dfe9ff':(night&&kind==='sun'&&g[y][x]===PAL.Y)?'#a9bde6':g[y][x];c.fillRect(x,y,1,1)}
+}
+const mini=(kind,night)=>{const c=document.createElement('canvas');drawSprite(c,kind,night);return c};
+function kindOf(code){if(code===0)return'sun';if(code<=2)return'part';if(code===3)return'cloud';if(code===45||code===48)return'fog';if(code>=95)return'storm';if((code>=71&&code<=77)||code===85||code===86)return'snow';return'rain'}
+const NAMES={sun:'Ясно',part:'Мінлива хмарність',cloud:'Хмарно',fog:'Туман',rain:'Дощ',snow:'Сніг',storm:'Гроза'};
+const wdays=['нд','пн','вт','ср','чт','пт','сб'];
+
+function sampleWeather(ci){
+  const now=new Date(),h=now.getHours(),b=[17,16,18,13,12,14,15][ci]||15,kinds=[0,1,3,1,0,3,2,61,0];
+  const hours=[],days=[];for(let i=0;i<8;i++){const hh=(h+i*3)%24;hours.push({t:hh,temp:Math.round(b+4*Math.sin((hh-9)/24*Math.PI*2)),code:hh>=21||hh<6?1:kinds[(i+ci)%kinds.length]})}
+  for(let i=0;i<5;i++){const d=new Date(now.getTime()+i*864e5);days.push({d:wdays[d.getDay()],max:b+3-(i%3),min:b-5+(i%2),code:kinds[(i*2+ci)%kinds.length]})}
+  return{live:false,temp:Math.round(b+4*Math.sin((h-9)/24*Math.PI*2)),feels:b,hum:68,wind:5,code:1,night:h>=21||h<6,hours,days};
+}
+async function fetchWeather(c){
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+c[1]+'&longitude='+c[2]+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&wind_speed_unit=ms&timezone=Europe%2FKyiv&forecast_days=5';
+  const ac2=new AbortController(),to=setTimeout(()=>ac2.abort(),5000);
+  try{const r=await fetch(u,{signal:ac2.signal});if(!r.ok)throw 0;const j=await r.json();clearTimeout(to);
+    const hs=j.hourly,nowI=hs.time.findIndex(t=>new Date(t)>=new Date());const i0=Math.max(0,nowI);
+    return{live:true,temp:Math.round(j.current.temperature_2m),feels:Math.round(j.current.apparent_temperature),hum:Math.round(j.current.relative_humidity_2m),wind:Math.round(j.current.wind_speed_10m),code:j.current.weather_code,night:!j.current.is_day,
+      hours:[0,1,2,3,4,5,6,7].map(k=>{const i=i0+k*3;return{t:new Date(hs.time[i]).getHours(),temp:Math.round(hs.temperature_2m[i]),code:hs.weather_code[i]}}).filter(x=>!isNaN(x.temp)),
+      days:j.daily.time.map((t,i)=>({d:wdays[new Date(t).getDay()],max:Math.round(j.daily.temperature_2m_max[i]),min:Math.round(j.daily.temperature_2m_min[i]),code:j.daily.weather_code[i]}))}
+  }catch(e){clearTimeout(to);return null}
+}
+async function loadWeather(){
+  const sel=$('#city');const saved=store.get('city',CONFIG.DEFAULT_CITY);
+  if(!sel.options.length){CITIES.forEach(c=>{const o=mk('option','',c[0]);o.value=c[0];sel.appendChild(o)});sel.value=CITIES.some(c=>c[0]===saved)?saved:CITIES[0][0];sel.onchange=()=>{store.set('city',sel.value);loadWeather()}}
+  const ci=Math.max(0,CITIES.findIndex(c=>c[0]===sel.value));
+  $('#wDesc').textContent='Завантаження…';
+  const w=(await fetchWeather(CITIES[ci]))||sampleWeather(ci);renderWeather(w,sel.value);
+}
+function renderWeather(w,city){
+  const k=kindOf(w.code);$('#wCard').classList.toggle('night',w.night);
+  drawSprite($('#wBig'),k,w.night);$('#wTemp').textContent=w.temp+'°';$('#wDesc').textContent=NAMES[k]+', '+city;
+  const st=$('#wStats');st.textContent='';[['Відчувається',w.feels+'°'],['Вітер',w.wind+' м/с'],['Вологість',w.hum+'%']].forEach(([a,b])=>{const d=mk('div','',a);d.appendChild(mk('b','',b));st.appendChild(d)});
+  const src=$('#wSrc');src.textContent='';
+  if(w.live)src.appendChild(mk('span','','Наживо · Open-Meteo'));
+  else{src.appendChild(mk('em','','Приклад'));src.appendChild(mk('span','','Дані не завантажено. На вашому сайті тут буде реальна погода.'))}
+  const hb=$('#wHours');hb.textContent='';w.hours.forEach(h=>{const d=mk('div','hour');d.appendChild(mk('div','',pad(h.t)+':00'));d.appendChild(mini(kindOf(h.code),h.t>=21||h.t<6));d.appendChild(mk('b','',h.temp+'°'));hb.appendChild(d)});
+  const db=$('#wDays');db.textContent='';w.days.forEach((x,i)=>{const d=mk('div','day');d.appendChild(mk('span','',i===0?'сьогодні':x.d));d.appendChild(mini(kindOf(x.code),false));d.appendChild(mk('span','',NAMES[kindOf(x.code)]));const t=mk('span','',x.max+'° ');t.appendChild(mk('i','',x.min+'°'));d.appendChild(t);db.appendChild(d)});
+  if(window.innerWidth<420)db.querySelectorAll('.day span:nth-child(3)').forEach(s=>s.style.display='none');
+}
+
+/* ====== НОВИНИ ====== */
+let news=[],filter='Усі';
+async function loadNews(){
+  let items=null;
+  if(CONFIG.NEWS_RSS.length){
+    try{const res=await Promise.all(CONFIG.NEWS_RSS.map(u=>fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(u)).then(r=>r.json())));
+      items=res.flatMap(r=>(r.items||[]).map(i=>({tag:'Стрічка',title:i.title,src:(r.feed&&r.feed.title)||'RSS',time:new Date(i.pubDate).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}),link:i.link}))).slice(0,20);if(!items.length)items=null}catch(e){items=null}
+  }
+  if(!items){items=SAMPLE_NEWS.map(n=>({tag:n[0],title:n[1],src:n[2],time:n[3],link:''}));$('#newsNote').hidden=false}else $('#newsNote').hidden=true;
+  news=items;renderNews();
+}
+function renderNews(){
+  const tags=['Усі',...Array.from(new Set(news.map(n=>n.tag))).filter(t=>t!=='Стрічка')];
+  const ch=$('#chips');ch.textContent='';if(tags.length>1)tags.forEach(t=>{const b=mk('button','chip',t);b.setAttribute('aria-pressed',String(t===filter));b.onclick=()=>{filter=t;renderNews()};ch.appendChild(b)});
+  const box=$('#newsList');box.textContent='';
+  news.filter(n=>filter==='Усі'||n.tag===filter).forEach(n=>{const a=mk(n.link?'a':'article','glass news');if(n.link){a.href=n.link;a.target='_blank';a.rel='noopener'}
+    a.appendChild(mk('h3','',n.title));const m=mk('div','meta');m.appendChild(mk('span','tag',n.tag));m.appendChild(mk('span','',n.src));m.appendChild(mk('span','',n.time));a.appendChild(m);box.appendChild(a)});
+}
+let speaking=false;
+$('#ttsBtn').onclick=()=>{
+  const S=window.speechSynthesis;if(!S){toast('Озвучення не підтримується цим браузером');return}
+  if(speaking){S.cancel();speaking=false;$('#ttsTxt').textContent='Прослухати випуск';return}
+  const txt='Новини МатросFM. '+news.filter(n=>filter==='Усі'||n.tag===filter).map(n=>n.title).join('. ');
+  const u=new SpeechSynthesisUtterance(txt);u.lang='uk-UA';u.onend=u.onerror=()=>{speaking=false;$('#ttsTxt').textContent='Прослухати випуск'};
+  speaking=true;$('#ttsTxt').textContent='Зупинити';S.speak(u);
+};
+
+/* ====== ФОРМА, ПОДІЛИТИСЯ, СТАН МЕРЕЖІ ====== */
+$('#reqForm').addEventListener('submit',e=>{e.preventDefault();
+  const list=store.get('reqs',[]);list.push({n:$('#reqName').value.trim(),s:$('#reqSong').value.trim(),m:$('#reqMsg').value.trim(),t:Date.now()});store.set('reqs',list.slice(-30));
+  e.target.reset();toast('Заявку збережено в цьому браузері')});
+$('#shareBtn').onclick=async()=>{const u=location.href.split('#')[0];try{await navigator.clipboard.writeText(u);toast('Посилання скопійовано')}catch(e){toast('Скопіюйте адресу з рядка браузера')}};
+function net(){$('#offline').hidden=navigator.onLine!==false}
+addEventListener('online',net);addEventListener('offline',net);
+
+/* ====== СТАРТ ====== */
+setVol(vol);applyTheme(themeMode);saverUi();sleepUi();renderSchedule();refreshMode();syncFav();net();resize();cacheColors();
+setInterval(renderSchedule,60000);
+go(location.hash.slice(1)||'live');
+})();
+</script>
